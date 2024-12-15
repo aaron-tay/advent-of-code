@@ -1,9 +1,7 @@
-const fs = require('fs');
-const readline = require('readline');
-const parseArgs = require('./parse-args');
-const {
-  filename,
-} = parseArgs.getCliArguments();
+const fs = require("fs");
+const readline = require("readline");
+const parseArgs = require("./parse-args");
+const { filename } = parseArgs.getCliArguments();
 
 async function processFile() {
   return new Promise((resolve, reject) => {
@@ -15,15 +13,15 @@ async function processFile() {
       input: input,
     });
 
-    rl.on('line', (line) => {
+    rl.on("line", (line) => {
       lines.push(line);
     });
-    rl.on('close', () => {
+    rl.on("close", () => {
       resolve(lines);
-    })
-    rl.on('error', (err) => {
+    });
+    rl.on("error", (err) => {
       reject(err);
-    })
+    });
   });
 }
 
@@ -31,7 +29,9 @@ async function writeFile(outputFile, data) {
   return new Promise((resolve, reject) => {
     const dataToWrite = new Uint8Array(Buffer.from(data));
     fs.writeFile(outputFile, dataToWrite, (err) => {
-      if (err) { return reject(err); }
+      if (err) {
+        return reject(err);
+      }
       resolve("OK");
     });
   });
@@ -40,7 +40,9 @@ async function writeFile(outputFile, data) {
 async function readFile(inputFile) {
   return new Promise((resolve, reject) => {
     fs.readFile(inputFile, (err, data) => {
-      if (err) { return reject(err); }
+      if (err) {
+        return reject(err);
+      }
       resolve(data);
     });
   });
@@ -59,11 +61,9 @@ function groupLines(lines) {
       data.push(line);
     }
   }
-  if (line === "") {
-    result.push(data);
-  }
+  result.push(data);
 
-  return data;
+  return result;
 }
 
 module.exports = {
@@ -72,5 +72,5 @@ module.exports = {
   cache: {
     readFile,
     writeFile,
-  }
+  },
 };
