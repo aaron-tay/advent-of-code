@@ -85,6 +85,11 @@ const CODES = DIRECTIONS.map(([, , d]) => d);
   const width = grouped[0][0].length;
 
   function render(world, robot, w = width, h = height) {
+    const axis = [];
+    for (let x = 0; x < w; ++x) {
+      axis.push(`${x}`.substring(0, 1));
+    }
+    console.log(axis.join(""));
     for (let y = 0; y < h; ++y) {
       const line = [];
       for (let x = 0; x < w; ++x) {
@@ -95,6 +100,7 @@ const CODES = DIRECTIONS.map(([, , d]) => d);
           line.push(world[loc]);
         }
       }
+      line.push(`${y}`.substring(0, 1));
       console.log(line.join(""));
     }
   }
@@ -154,6 +160,24 @@ const CODES = DIRECTIONS.map(([, , d]) => d);
       for (let x = 0; x < width; ++x) {
         const loc = key(x, y);
         if (world[loc] === "O") {
+          boxes.push(loc);
+        }
+      }
+    }
+    const score = boxes.reduce((acc, box) => {
+      const { x, y } = unkey(box);
+      const gpsCoord = 100 * y + x;
+      return acc + gpsCoord;
+    }, 0);
+    return score;
+  }
+
+  function scorePt2(world, w = width, h = height) {
+    const boxes = [];
+    for (let y = 0; y < h; ++y) {
+      for (let x = 0; x < w; ++x) {
+        const loc = key(x, y);
+        if (world[loc] === "[") {
           boxes.push(loc);
         }
       }
@@ -302,18 +326,19 @@ const CODES = DIRECTIONS.map(([, , d]) => d);
   function pushRecursive(world, locs, direction) {
     const lhs = world[locs[0].loc];
     const rhs = world[locs[1].loc];
-    console.log(" PR", locs[0].loc, locs[1].loc, lhs, rhs);
+    // console.log(" PR", locs[0].loc, locs[1].loc, lhs, rhs);
     if (lhs === "#" || rhs === "#") {
       return null; // cannot move
     }
     if (lhs === "." && rhs === ".") {
-      return locs;
+      return [];
     }
 
     const result = [];
     // NB: something here is not checking both left and right of the next positions. it's just going forward
+    //  we're going through walls!?
     if (lhs === "[") {
-      console.log(" l [");
+      // console.log(" l [");
       // one up
       const n1 = move(locs[0], direction);
       const n2 = move(locs[1], direction);
@@ -322,8 +347,13 @@ const CODES = DIRECTIONS.map(([, , d]) => d);
         return null;
       }
       result.push(locs[0], locs[1], ...r);
-    } else if (lhs === "]") {
-      console.log(" l ]");
+    }
+
+    // check the special double case
+    const left = [];
+    const right = [];
+    if (lhs === "]") {
+      // console.log(" l ]");
       // up to left
       const { x, y } = unkey(locs[0].loc);
       const nPos = {
@@ -338,29 +368,54 @@ const CODES = DIRECTIONS.map(([, , d]) => d);
       if (r === null) {
         return null;
       }
-      result.push(locs[0], locs[1], ...r);
-    } else if (rhs === "[") {
-      console.log(" r ]");
+      left.push([locs[0], locs[1]], [...r]);
+    }
+    if (rhs === "[") {
+      // console.log(" r [");
       // up to right
       // up to left
-      const { x, y } = unkey(locs[0].loc);
+      const { x, y } = unkey(locs[1].loc);
       const nPos = {
         loc: key(x + 1, y),
         x: x + 1,
         y,
       };
 
-      const n1 = move(locs[0], direction);
+      const n1 = move(locs[1], direction);
       const n2 = move(nPos, direction);
       const r = pushRecursive(world, [n1, n2], direction);
       if (r === null) {
         return null;
       }
-      result.push(locs[0], locs[1], ...r);
+
+      right.push([locs[0], locs[1]], [...r]);
     } else {
-      console.log("??");
+      // console.log("??");
     }
-    return result;
+    // NB: may have a duplicate box
+    //  []
+    // [][]
+    //  []
+    const maybePush = (obj) => {
+      if (obj) {
+        result.push(...obj);
+      }
+    };
+    maybePush(left?.[0]);
+    maybePush(right?.[0]);
+    maybePush(left?.[1]);
+    maybePush(right?.[1]);
+    result.filter((n) => n);
+    const unique = new Map(result.map((l) => [l.loc, l]));
+    const uniques = [...unique.entries()].map(([e, v]) => v);
+    // should sort by furthest (based on direction)
+    if (direction[2] === "n") {
+      uniques.sort((a, b) => b.y - a.y);
+    } else if (direction[2] === "s") {
+      uniques.sort((a, b) => a.y - b.y);
+    }
+    console.log(uniques);
+    return uniques;
   }
 
   function push2(world, robot, direction) {
@@ -403,9 +458,9 @@ const CODES = DIRECTIONS.map(([, , d]) => d);
       verticalChain.push(prev);
     }
 
-    console.log("chain");
+    // console.log("chain");
     verticalChain.reverse().forEach((obj) => {
-      console.log(" ", obj);
+      // console.log(" ", obj);
       wideMoveObj(newWorld, obj, direction);
     });
     let newRobot = verticalChain.length > 0 ? move(robot, direction) : structuredClone(robot);
@@ -427,8 +482,14 @@ const CODES = DIRECTIONS.map(([, , d]) => d);
       console.log(`\n\n${idx}, ${resultRobot.loc}, ${cmd[2]} ---\n`);
       render(resultWorld, resultRobot, eWidth, eHeight);
     });
-    // const result = scorePt1(resultWorld);
-    // console.log(result);
+    const result = scorePt2(resultWorld, eWidth, eHeight);
+    console.log(result);
   }
   pt2(expandedWorld, robotStart, commands);
 })();
+
+// 1505010 too low
+// 1499914 too low
+// 1509724 too high
+
+// 4,714 diff
