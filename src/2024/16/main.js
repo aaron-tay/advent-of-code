@@ -84,5 +84,5 @@ const BY_INDEX = DIRECTIONS.map(([, , d]) => d);
   const reindeer = structuredClone(origin);
   render(world, reindeer);
 
-  function bestPath()
+  function bestPath(world, current, goal, path) {}
 })();

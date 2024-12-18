@@ -66,6 +66,42 @@ function groupLines(lines) {
   return result;
 }
 
+const world = () => {
+  const DIRECTIONS = [
+    [1, 0, "e", 0, ">"],
+    [0, 1, "s", 1, "v"],
+    [-1, 0, "w", 2, "<"],
+    [0, -1, "n", 3, "^"],
+    // [1, 1, "ne"],
+    // [-1, -1, "sw"],
+    // [-1, 1, "nw"],
+    // [1, -1, "se"],
+  ];
+  const BY_INDEX = DIRECTIONS.map(([, , d]) => d);
+
+  const key = (x, y) => `${x}_${y}`;
+  const unkey = (keyStr) => {
+    const [x, y] = keyStr.split("_");
+    return { x: +x, y: +y };
+  };
+  const moveByCoord = (x, y, direction) => {
+    return { x: x + direction[0], y: y + direction[1] };
+  };
+  const moveByLoc = (loc, direction) => {
+    const { x, y } = unkey(loc);
+    const { x: nx, y: ny } = moveByCoord(x, y, direction);
+    return key(nx, ny);
+  };
+
+  return {
+    DIRECTIONS,
+    key,
+    unkey,
+    moveByCoord,
+    moveByLoc,
+  };
+};
+
 module.exports = {
   processFile,
   groupLines,
@@ -73,4 +109,5 @@ module.exports = {
     readFile,
     writeFile,
   },
+  world,
 };
